@@ -1,43 +1,49 @@
 # Financial Data Lakehouse
 
-**Portfolio project (under active construction)**. A reproducible Databricks Free Edition implementation of a financial event lakehouse using PySpark, Delta Lake MERGE, Spark SQL, quality validation, and Bronze/Silver/Gold architecture. All data is synthetic.
+**GitHub portfolio project (under active construction).** Databricks Free Edition + PySpark + Delta Lake + Spark SQL. Synthetic financial payment-state events demonstrate schema validation, corrections, late events, current-state MERGE, quarantine, replay safety, and business-level aggregates.
 
 ## Milestone status
-- [x] M1 starter notebook and deterministic fixture designed; **Databricks run pending**
-- [ ] M1 confirmed with actual Databricks run + screenshots
-- [ ] M2 file-based ingestion, incremental batch handling and edge-case tests
-- [ ] M3 reconciliation, recovery and audit metrics
-- [ ] M4 Databricks Jobs orchestration, evidence and polish
+- [x] **M1:** Embedded-fixture Bronze → Silver → Gold pipeline. Executed and passed in Databricks on 2026-10-28 (see [`docs/milestone_1_evidence.md`](docs/milestone_1_evidence.md)).
+- [ ] **M2:** CSV-backed ingestion via a Unity Catalog volume; incremental third batch and replay checks. Implementation added, **Databricks run pending**.
+- [ ] **M3:** Reconciliation, more edge cases, interrupted-run recovery and audit metrics.
+- [ ] **M4:** Databricks Jobs orchestration, final evidence and documentation polish.
 
-## Quickstart (Databricks Free Edition)
-1. Create a free workspace from https://docs.databricks.com/aws/en/getting-started/free-edition . Use **Free Edition**, not the time-limited free trial.
-2. In the workspace sidebar choose **Workspace**. Import `notebooks/01_foundation_pipeline.py` (as a notebook) into your user folder, or open from a Databricks Git folder.
-3. Attach **Serverless** compute (if not automatically selected), then **Run all**. The notebook creates a `financial_lakehouse` schema inside `current_catalog()`.
-4. Inspect Silver, Gold and Quarantine result tables in the final notebook cell.
-5. Run the entire notebook again to verify replay stability.
-6. If permissions prevent `CREATE SCHEMA`, create a schema through Catalog Explorer that you have rights to, then update `SCHEMA` in the first code cell.
+## Quickstart
 
-## Expected results (not yet verified on Databricks)
-| Dataset | Row count | Details |
-|---|---:|---|
-| Bronze | 14 | All distinct source event IDs |
-| Quarantine | 6 | Missing amount/merchant, negative/non-numeric amount, bad status/date |
-| Silver | 5 | 4 currently settled, 1 currently failed |
-| Gold | 3 | Merchant-day groups; total settled INR 450.00 |
+### M1: Foundation (verified)
+1. Import [`notebooks/01_foundation_pipeline.py`](notebooks/01_foundation_pipeline.py) into Databricks.
+2. Run all cells on serverless compute.
+3. Expected: Bronze 14; Quarantine 6; Silver 5; Gold 3; settled INR 450.00. Rerun must not change the result.
 
-P001 changes from ₹100 to ₹120, while the late-arriving older P004 version **must not** replace ₹200 with ₹175. P002's duplicate business snapshot must not be double counted.
+### M2: Read real CSV files (awaiting Databricks verification)
+1. Run this in an M1 notebook Python cell:
+   ```python
+   catalog = spark.sql('SELECT current_catalog()').first()[0]
+   spark.sql(f'CREATE VOLUME IF NOT EXISTS `{catalog}`.`financial_lakehouse`.`landing_files`')
+   print(f'/Volumes/{catalog}/financial_lakehouse/landing_files')
+   ```
+2. In **Catalog Explorer**, navigate to `financial_lakehouse > landing_files` and upload `data/batch_01.csv`, `data/batch_02.csv`, and `data/batch_03.csv` from this repository into its root. See [official Databricks volume upload guide](https://docs.databricks.com/aws/en/volumes/volume-files).
+3. Import [`notebooks/02_file_ingestion.py`](notebooks/02_file_ingestion.py) and **Run all** on serverless compute.
+4. Expected after all three: Bronze 20; Quarantine 7; Silver 6; Gold 6; settled INR 550.00. Replay must keep those values unchanged.
+5. M2 outputs live in separate tables named `bronze_file_transactions`, `silver_file_payments`, `quarantine_file_events`, `gold_file_daily_payments`, leaving M1 tables untouched.
+
+The notebook checks expected results with assertions and prints an explicit PASS on success. See [`docs/milestone_2_guide.md`](docs/milestone_2_guide.md) for details.
+
+## Business contract
+- **Event grain:** each unique event ID is a payment-state snapshot. Duplicate delivery of the same ID is not a new event.
+- **Silver grain:** one latest snapshot per `payment_id`; higher `event_version` wins, then newer `event_ts` if the version is equal.
+- **Gold grain:** one `(business_date, merchant_id)` aggregate of *current* payment states. Settled totals include only `SETTLED` payments; failures are counts of current `FAILED` states.
+- Example: `P001` is corrected from ₹100 to ₹120. `P004` remains ₹200 even though its older ₹175 version arrives later. The third batch corrects `P002`, changes `P003` from failed to settled, and adds `P012`.
+- Currency is modeled with `DECIMAL(18,2)` rather than binary floating-point math.
 
 ## Repository map
-- `notebooks/01_foundation_pipeline.py`: importable Databricks source notebook (M1)
-- `data/batch_01.csv`, `data/batch_02.csv`: illustrative source files for M2 ingestion; currently fixture equivalent
-- `sql/inspect_results.sql`: optional human queries (assumes `workspace` catalog; adapt if needed)
-- `docs/architecture.md`: architecture and business rules
+- `notebooks/01_foundation_pipeline.py`: self-contained M1 pipeline.
+- `notebooks/02_file_ingestion.py`: M2 volume-backed ingestion and incremental event state.
+- `data/batch_01.csv`, `data/batch_02.csv`, `data/batch_03.csv`: synthetic test files.
+- `sql/inspect_results.sql`, `sql/inspect_file_results.sql`: example SQL queries (catalog may need adapting).
+- `docs/architecture.md`: flow, grains, ordering, limitations.
+- `docs/milestone_1_evidence.md`: verified M1 output from Databricks.
+- `docs/milestone_2_guide.md`: M2 execution and expected results.
 
-## Data and behavior contracts
-One event = one payment-state snapshot, with `event_version`. Raw events can be re-sent. Different event IDs can refer to the same payment. Silver chooses the highest version, or the latest event timestamp for a version tie. Gold reports latest payment states, not all historical payment events. Monetary data uses `DECIMAL(18,2)`.
-
-## Scope / limitations
-M1 uses embedded fixtures rather than file-based ingestion, and Gold is rebuilt in full. This is **not** a live banking integration, production deployment, streaming pipeline, reconciliation engine or scheduled Databricks Job yet. Those claims will be added only when implemented and validated.
-
-## Running cost
-Databricks Free Edition has serverless quota limits. No cloud billing account is required for this prototype.
+## Constraints and engineering trade-offs
+This project is a **portfolio prototype, not a production deployment**. M2 requires manually uploaded CSV files. It does not claim automated file arrival, streaming, production access controls or end-to-end atomic transactions. Bronze and Silver use Delta MERGE. Gold is deliberately recalculated from Silver on each run to avoid stale historical group totals when a payment changes business date or status. Cross-batch conflicting records with identical version/timestamp are not yet resolved by a strict conflict policy. M3 will address reconciliation and failure recovery. Free Edition has serverless quotas.
