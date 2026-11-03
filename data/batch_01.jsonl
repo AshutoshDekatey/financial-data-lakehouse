@@ -1,0 +1,5 @@
+{"account_id": "acct_001", "amount_minor": "10000", "currency": "USD", "event_id": "e1", "event_time": "2026-01-02T10:00:00Z", "settlement_date": "2026-01-02", "status": "SETTLED", "transaction_id": "t1", "version": "1"}
+{"account_id": "acct_001", "amount_minor": "10000", "currency": "USD", "event_id": "e1", "event_time": "2026-01-02T10:00:00Z", "settlement_date": "2026-01-02", "status": "SETTLED", "transaction_id": "t1", "version": "1"}
+{"account_id": "acct_001", "amount_minor": "2500", "currency": "USD", "event_id": "e2", "event_time": "2026-01-02T10:00:00Z", "settlement_date": "2026-01-02", "status": "SETTLED", "transaction_id": "t2", "version": "1"}
+{"account_id": "acct_001", "amount_minor": "-5", "currency": "USD", "event_id": "bad1", "event_time": "2026-01-02T10:00:00Z", "settlement_date": "2026-01-02", "status": "SETTLED", "transaction_id": "bad", "version": "1"}
+{"account_id": "acct_001", "amount_minor": "10000", "currency": "XYZ", "event_id": "bad2", "event_time": "2026-01-02T10:00:00Z", "settlement_date": "2026-01-02", "status": "SETTLED", "transaction_id": "bad2", "version": "1"}

@@ -1,0 +1,26 @@
+[
+  {
+    "batch": 1,
+    "matches": true,
+    "settled_transactions": 2,
+    "amount_minor": "12500"
+  },
+  {
+    "batch": 2,
+    "matches": true,
+    "settled_transactions": 2,
+    "amount_minor": "15000"
+  },
+  {
+    "batch": 2,
+    "matches": true,
+    "settled_transactions": 2,
+    "amount_minor": "15000"
+  }
+]
++---------------+----------+--------+-----------------+------------+
+|settlement_date|account_id|currency|transaction_count|amount_minor|
++---------------+----------+--------+-----------------+------------+
+|     2026-01-01|  acct_001|     USD|                1|        3000|
+|     2026-01-02|  acct_001|     USD|                1|       12000|
++---------------+----------+--------+-----------------+------------+

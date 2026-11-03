@@ -1,0 +1,1 @@
+- Built and locally tested a Python, PySpark, Spark SQL and Delta Lake payment pipeline with Bronze/Silver/Gold layers, duplicate handling, corrections, late arrivals, quarantine and idempotent settlement reconciliation.
