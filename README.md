@@ -43,7 +43,7 @@ fixture version. Use a fresh output path when changing fixtures.
 
 1. Use an **existing classic Databricks Runtime 17.3 LTS** cluster with Spark/Delta
    included. Do not install the local pinned PySpark/Delta packages on the cluster.
-   This runtime target is not yet integration-tested here.
+   The successful user-reported run did not specify its runtime version.
 2. Add this repository as a Databricks Git folder. Open
    `notebooks/financial_lakehouse.py` as a Python source notebook and attach the cluster.
 3. Have WRITE/READ VOLUME and USE CATALOG/SCHEMA permissions on an existing Unity
@@ -56,8 +56,17 @@ fixture version. Use a fresh output path when changing fixtures.
    and two quarantined records. Inspect both displayed tables.
 6. Run all cells again to verify rerun behavior. Tables persist; processes need not.
 
-All automated tests currently run locally; the notebook assertions are the separate,
-unexecuted Databricks integration check. This is batch processing, not streaming.
+Verification: the project owner successfully executed the notebook in Databricks
+and reported matching reconciliation totals **12500 → 15000 → 15000**, with two
+settled transactions at every step. Gold settlement and quarantine tables were
+printed. This confirms the supplied scenario and its in-notebook batch rerun.
+See [evidence and provenance](docs/evidence.md) for the exact output.
+
+The three automated tests were executed locally; the full exceptional-case suite,
+concurrent writers, scale performance, cross-table failure recovery and a second
+complete notebook execution remain unverified on Databricks. The remote runtime
+version was not supplied. No production deployment or benchmark is claimed.
+This is batch processing, not streaming.
 
 ## Expected final settlement
 

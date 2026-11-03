@@ -2,7 +2,8 @@
 
 Date: 2026-11-03. Execution: local Linux task workspace, Python 3.12.14,
 OpenJDK 21.0.12.1, PySpark 4.0.1, delta-spark 4.0.0, pytest 8.4.2.
-This is real local Spark/Delta execution, not a mocked pipeline or Databricks run.
+The automated tests below ran on real local Spark/Delta. The separate Databricks
+execution reported by the project owner is recorded below.
 
 ## Automated tests
 
@@ -36,11 +37,38 @@ batches to a separate directory and comparing with `cmp` passed byte-for-byte.
 
 ## Limits of evidence
 
-Databricks notebook assertions have **not** been executed remotely. No Databricks
-credentials, paid service provisioning or external resource changes were used.
-Concurrency, performance at scale and failure recovery across table writes are not
-validated. Example CSV is the expected final output, independently asserted by the
-local integration test. This report does not claim production banking readiness.
+The Databricks results below are supplied by the project owner; the assistant did
+not execute or independently inspect that remote run. Its execution date, runtime
+version, cluster configuration and run URL were not supplied. The documented
+17.3 LTS runtime remains a recommended target, not a confirmed runtime for this run.
+No benchmark, production deployment or additional automated test results are claimed.
+Concurrency, performance at scale and failure recovery across table writes remain
+unverified. The full exceptional-case suite has only been verified locally, not
+on Databricks. A second complete notebook execution was not reported; the third
+reconciliation result demonstrates the repeated batch within the reported run.
+The example CSV remains independently asserted by the local integration test;
+individual rows of the displayed Databricks tables were not supplied.
+This report does not claim production banking readiness.
+
+## Real Databricks execution — user-reported
+
+The project owner confirmed that the v0.1 notebook successfully completed in
+Databricks and printed the Gold settlement and quarantine tables. The actual
+reconciliation output supplied was:
+
+```json
+[
+  {"matches": true, "settled_transactions": 2, "amount_minor": "12500"},
+  {"matches": true, "settled_transactions": 2, "amount_minor": "15000"},
+  {"matches": true, "settled_transactions": 2, "amount_minor": "15000"}
+]
+```
+
+These results confirm notebook execution and reconciliation for the supplied
+two-batch scenario: 12500 after batch 1, 15000 after batch 2, and unchanged
+15000 after the in-notebook batch-2 rerun, each with two settled transactions.
+This is a real Databricks execution reported by the user, separate from the
+three local automated tests above.
 
 ## Executed demo
 
